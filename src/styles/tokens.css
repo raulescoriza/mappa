@@ -1,0 +1,15 @@
+:root {
+  --bg: #f5f3ee;
+  --surface: #ffffff;
+  --ink: #14201c;
+  --muted: #5a6763;
+  --primary: #0e6b5c;
+  --primary-soft: #dceee8;
+  --accent: #e2603f;
+  --accent-soft: #fbe3da;
+  --line: #e2ddd3;
+  --body: #d8d2c6;
+
+  --font-heading: 'Fraunces', serif;
+  --font-body: 'DM Sans', system-ui, sans-serif;
+}
