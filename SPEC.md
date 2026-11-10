@@ -19,7 +19,7 @@ Only the shoulder. Six steps:
 5. **Plan** – the exercises of the current level with dosage, frequency and a plain-language cue.
    Video area is a placeholder ("Avatar demo · in development").
 6. **Weekly check-in** – the user reports symptom response; the app says level up / stay /
-   level down and shows the new plan.
+   reduce load / level down and shows the new plan.
 
 ### Non-goals
 No backend, no accounts, no real videos, no other body regions, no analytics,
@@ -57,11 +57,12 @@ src/
 - `checkScope(region, answers) → { result: 'inScope' } | { result: 'outOfScope', reason }`
 - `classifyIrritability(region, answers) → 'high' | 'moderate' | 'low'`
 - `startingLevel(region, irritability) → 1 | 2 | 3`
-- `evaluateCheckIn(region, currentLevel, checkIn) → { decision: 'up' | 'stay' | 'down', nextLevel }`
+- `evaluateCheckIn(region, current: { level, load: 'normal' | 'reduced' }, checkIn)
+   → { decision: 'up' | 'stay' | 'reduceLoad' | 'restoreLoad' | 'down', next: { level, load } }`
 
 ## Clinical content (shoulder)
-Source of truth: the case study. Items marked **[RAÚL TO CONFIRM]** are prototype choices
-that must be reviewed by Raúl before publishing.
+Source of truth: the case study, reviewed and confirmed by Raúl (physiotherapist).
+Thresholds come from his clinical practice.
 
 ### Red flags (any "yes" → refer; urgency order: emergency > urgent > gp/doctor)
 | id | Question | Urgency | Referral copy |
@@ -86,25 +87,27 @@ Each answer maps to high / moderate / low:
 | Does the pain wake you at night? | Almost every night | Sometimes | Rarely |
 | After activity, how long does the pain last? | Hours | Less than 1 hour | Minutes |
 
-Classification rule **[RAÚL TO CONFIRM]**: the category with most answers wins;
-on a tie, the more irritable category wins (safety first).
+Classification rule: the category with most answers wins; on a tie (one answer in each
+category), the more irritable category wins (safety first).
 
 Starting level: high → 1, moderate → 2, low → 2 (copy: "Level 3 if Level 2 feels easy").
 
-### Levels and exercises (cues **[RAÚL TO CONFIRM]**)
-**Level 1 · Isometrics** – daily
+### Levels and exercises
+Each level has a **normal** and a **reduced** load.
+
+**Level 1 · Isometrics** – daily · reduced load: 5 × 20 s at lighter effort
 - Wall external rotation (isometric) – 5 × 30 s at submaximal effort, no more than mild discomfort.
   Cue: "Elbow bent at 90° against your side, press the back of your hand into a wall without moving."
 - Wall abduction (isometric) – 5 × 30 s.
   Cue: "Stand side-on to a wall, press the outside of your elbow into it as if lifting the arm sideways."
 
-**Level 2 · Light load** – every other day
+**Level 2 · Light load** – every other day · reduced load: 2 × 10 with a lighter band
 - Band external rotation – 3 × 12–15. Cue: "Elbow tucked to your side, rotate the hand outwards slowly."
 - Band row – 3 × 12–15. Cue: "Pull your elbows back and squeeze your shoulder blades together."
 - Scaption to 90° – 3 × 12–15. Cue: "Lift the arms forward at a slight angle, thumbs up, up to shoulder height."
 
-**Level 3 · Progressive load** – every other day
-- Heavier band or dumbbell external rotation – 3 × 6–8.
+**Level 3 · Progressive load** – every other day · reduced load: 3 × 8–10 with a lighter weight
+- Heavier band or dumbbell external rotation – 3 × 6–8. Cue: "Elbow tucked to your side, rotate the hand outwards slowly."
 - Light overhead press – 3 × 6–8. Cue: "Press up without shrugging; stop before pain rises."
 - Incline push-up – 3 × 6–8. Cue: "Hands on a table or wall, body in a straight line."
 
@@ -115,11 +118,20 @@ Inputs:
 - Completed all sets without shrugging the shoulder: yes / no
 - Worse the next morning in 2 sessions in a row: yes / no
 
-Rules (thresholds from Raúl's clinical practice):
-1. **Down** if pain during > 5, or worse next morning in 2 sessions in a row. Never below Level 1.
-2. **Up** if pain during ≤ 4 **and** next morning is better or same **and** all sets completed.
+Definitions:
+- **Flare** = pain during ≥ 4, **or** worse next morning in 2 sessions in a row.
+- **Good response** = pain during ≤ 3 **and** next morning better or same **and** all sets completed.
+
+Rules (thresholds from Raúl's clinical practice: intensity is always reduced when pain reaches 4/10),
+evaluated in this order:
+1. **Flare at normal load** → **reduceLoad**: same level, reduced load.
+2. **Flare at reduced load**:
+   - Level 2 or 3 → **down**: one level lower, normal load, and stay there.
+   - Level 1 → **stay** at Level 1 with reduced load (no lower level; no referral from this rule).
+3. **Good response at reduced load** → **restoreLoad**: same level, normal load (never skip straight up).
+4. **Good response at normal load** → **up**: next level, normal load.
    At Level 3, "up" means "stay at Level 3 and increase the load".
-3. Otherwise **stay**.
+5. Otherwise → **stay** (same level and load).
 
 Also show, on the plan screen: "No improvement after about 6 weeks? Get an in-person assessment."
 
@@ -140,7 +152,9 @@ Headings: Fraunces 600 · Body: DM Sans (Google Fonts)
 
 ## Acceptance criteria
 - Every rule in "Clinical content" has at least one unit test in `engine.test.ts`, including:
-  most-urgent red flag wins, tie-break in irritability, level floor (1) and ceiling (3).
+  most-urgent red flag wins, tie-break in irritability, pain exactly 3 vs exactly 4,
+  flare at normal vs reduced load, Level 1 floor (stays reduced), Level 3 ceiling,
+  and restoring load before levelling up.
 - `npm test` and `npm run build` pass with no TypeScript errors.
 - The full flow works on a 390px-wide phone and on desktop.
 - Deployed on GitHub Pages; the URL is linked from the case study.
