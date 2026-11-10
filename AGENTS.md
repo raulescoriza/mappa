@@ -18,4 +18,5 @@ Read `SPEC.md` before any task. It is the source of truth for scope, clinical co
 - Every rule in `engine.ts` needs a unit test. When you change a rule, update its test.
 - Do not add dependencies beyond Vite, React, TypeScript and Vitest without asking first.
 - Plain CSS with the variables in `src/styles/tokens.css`. No UI libraries.
-- Do not change clinical content marked **[RAÚL TO CONFIRM]** in the spec; flag it instead.
+- Never change clinical content (questions, thresholds, dosages, cues) on your own. It is confirmed
+  by Raúl. If something looks wrong or ambiguous, stop and ask instead of guessing.
