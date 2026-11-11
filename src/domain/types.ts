@@ -118,7 +118,8 @@ export interface CheckInThresholds {
   goodResponsePain: number
 }
 
-export type CheckInDecision = 'up' | 'stay' | 'reduceLoad' | 'restoreLoad' | 'down'
+export type CheckInDecision =
+  'up' | 'stay' | 'reduceLoad' | 'restoreLoad' | 'down'
 
 /** One line of feedback per decision, shown on the plan screen after a check-in. */
 export interface CheckInMessages {
