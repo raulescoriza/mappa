@@ -8,6 +8,7 @@ import {
 import { getRegion, isRegisteredRegion } from '../domain/regions'
 import type {
   CheckIn,
+  CheckInDecision,
   ExclusionAnswers,
   ExclusionQuestion,
   IrritabilityAnswer,
@@ -23,8 +24,18 @@ export type FlowState =
   | { step: 'referral'; regionId: string; flag: RedFlag }
   | { step: 'outOfScope'; regionId: string; reason: ExclusionQuestion }
   | { step: 'irritability'; regionId: string; answers: IrritabilityAnswer[] }
-  | { step: 'plan'; regionId: string; current: LevelState }
-  | { step: 'checkIn'; regionId: string; current: LevelState }
+  | {
+      step: 'plan'
+      regionId: string
+      current: LevelState
+      lastDecision?: CheckInDecision
+    }
+  | {
+      step: 'checkIn'
+      regionId: string
+      current: LevelState
+      lastDecision?: CheckInDecision
+    }
 
 export type FlowEvent =
   | { type: 'SELECT_REGION'; regionId: string }
@@ -158,6 +169,7 @@ export function flowReducer(state: FlowState, event: FlowEvent): FlowState {
           step: 'checkIn',
           regionId: state.regionId,
           current: state.current,
+          lastDecision: state.lastDecision,
         }
       }
       if (event.type === 'BACK') {
@@ -170,13 +182,19 @@ export function flowReducer(state: FlowState, event: FlowEvent): FlowState {
       const region = getRegion(state.regionId)
       if (event.type === 'SUBMIT_CHECK_IN') {
         const result = evaluateCheckIn(region, state.current, event.checkIn)
-        return { step: 'plan', regionId: state.regionId, current: result.next }
+        return {
+          step: 'plan',
+          regionId: state.regionId,
+          current: result.next,
+          lastDecision: result.decision,
+        }
       }
       if (event.type === 'BACK') {
         return {
           step: 'plan',
           regionId: state.regionId,
           current: state.current,
+          lastDecision: state.lastDecision,
         }
       }
       return state

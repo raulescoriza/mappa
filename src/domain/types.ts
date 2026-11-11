@@ -14,6 +14,7 @@ export interface Region {
   startingLevelNote: string
   checkInThresholds: CheckInThresholds
   planNote: string
+  checkInMessages: CheckInMessages
 }
 
 // --- Red flags -------------------------------------------------------------
@@ -117,9 +118,15 @@ export interface CheckInThresholds {
   goodResponsePain: number
 }
 
-export type CheckInResult =
-  | { decision: 'up'; next: LevelState }
-  | { decision: 'stay'; next: LevelState }
-  | { decision: 'reduceLoad'; next: LevelState }
-  | { decision: 'restoreLoad'; next: LevelState }
-  | { decision: 'down'; next: LevelState }
+export type CheckInDecision = 'up' | 'stay' | 'reduceLoad' | 'restoreLoad' | 'down'
+
+/** One line of feedback per decision, shown on the plan screen after a check-in. */
+export interface CheckInMessages {
+  up: string
+  stay: string
+  reduceLoad: string
+  restoreLoad: string
+  down: string
+}
+
+export type CheckInResult = { decision: CheckInDecision; next: LevelState }

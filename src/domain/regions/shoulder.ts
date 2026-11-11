@@ -191,4 +191,13 @@ export const shoulder: Region = {
   startingLevelNote: 'Level 3 if Level 2 feels easy',
   checkInThresholds,
   planNote: 'No improvement after about 6 weeks? Get an in-person assessment.',
+  checkInMessages: {
+    up: 'Good news: the shoulder is responding, so the plan moves to the next step.',
+    stay: 'Same level for now. The shoulder is settling, and that is the aim at this stage.',
+    reduceLoad:
+      'A small flare: the load is reduced for this week to let the shoulder settle down.',
+    restoreLoad:
+      'The shoulder has settled back down, so the normal load for this level is back on.',
+    down: 'We step back a level for now. Easier exercises while the shoulder recovers.',
+  },
 }
