@@ -5,7 +5,7 @@ import {
   screenRedFlags,
   startingLevel,
 } from '../domain/engine'
-import { shoulder } from '../domain/regions/shoulder'
+import { getRegion, isRegisteredRegion } from '../domain/regions'
 import type {
   CheckIn,
   ExclusionAnswers,
@@ -18,13 +18,13 @@ import type {
 
 export type FlowState =
   | { step: 'map' }
-  | { step: 'redFlags'; answers: RedFlagAnswers }
-  | { step: 'scope'; answers: ExclusionAnswers }
-  | { step: 'referral'; flag: RedFlag }
-  | { step: 'outOfScope'; reason: ExclusionQuestion }
-  | { step: 'irritability'; answers: IrritabilityAnswer[] }
-  | { step: 'plan'; current: LevelState }
-  | { step: 'checkIn'; current: LevelState }
+  | { step: 'redFlags'; regionId: string; answers: RedFlagAnswers }
+  | { step: 'scope'; regionId: string; answers: ExclusionAnswers }
+  | { step: 'referral'; regionId: string; flag: RedFlag }
+  | { step: 'outOfScope'; regionId: string; reason: ExclusionQuestion }
+  | { step: 'irritability'; regionId: string; answers: IrritabilityAnswer[] }
+  | { step: 'plan'; regionId: string; current: LevelState }
+  | { step: 'checkIn'; regionId: string; current: LevelState }
 
 export type FlowEvent =
   | { type: 'SELECT_REGION'; regionId: string }
@@ -41,15 +41,19 @@ export function flowReducer(state: FlowState, event: FlowEvent): FlowState {
 
   switch (state.step) {
     case 'map': {
-      if (event.type === 'SELECT_REGION' && event.regionId === shoulder.id) {
-        return { step: 'redFlags', answers: {} }
+      if (
+        event.type === 'SELECT_REGION' &&
+        isRegisteredRegion(event.regionId)
+      ) {
+        return { step: 'redFlags', regionId: event.regionId, answers: {} }
       }
       return state
     }
 
     case 'redFlags': {
+      const region = getRegion(state.regionId)
       if (event.type === 'ANSWER' && typeof event.value === 'boolean') {
-        if (!shoulder.redFlags.some((flag) => flag.id === event.questionId))
+        if (!region.redFlags.some((flag) => flag.id === event.questionId))
           return state
         return {
           ...state,
@@ -57,21 +61,27 @@ export function flowReducer(state: FlowState, event: FlowEvent): FlowState {
         }
       }
       if (event.type === 'SUBMIT_STEP') {
-        if (!shoulder.redFlags.every((flag) => flag.id in state.answers))
+        if (!region.redFlags.every((flag) => flag.id in state.answers))
           return state
-        const result = screenRedFlags(shoulder, state.answers)
-        if (result.result === 'refer')
-          return { step: 'referral', flag: result.flag }
-        return { step: 'scope', answers: {} }
+        const result = screenRedFlags(region, state.answers)
+        if (result.result === 'refer') {
+          return {
+            step: 'referral',
+            regionId: state.regionId,
+            flag: result.flag,
+          }
+        }
+        return { step: 'scope', regionId: state.regionId, answers: {} }
       }
       if (event.type === 'BACK') return { step: 'map' }
       return state
     }
 
     case 'scope': {
+      const region = getRegion(state.regionId)
       if (event.type === 'ANSWER' && typeof event.value === 'boolean') {
         if (
-          !shoulder.exclusions.some(
+          !region.exclusions.some(
             (question) => question.id === event.questionId,
           )
         )
@@ -83,15 +93,22 @@ export function flowReducer(state: FlowState, event: FlowEvent): FlowState {
       }
       if (event.type === 'SUBMIT_STEP') {
         if (
-          !shoulder.exclusions.every((question) => question.id in state.answers)
+          !region.exclusions.every((question) => question.id in state.answers)
         )
           return state
-        const result = checkScope(shoulder, state.answers)
-        if (result.result === 'outOfScope')
-          return { step: 'outOfScope', reason: result.reason }
-        return { step: 'irritability', answers: [] }
+        const result = checkScope(region, state.answers)
+        if (result.result === 'outOfScope') {
+          return {
+            step: 'outOfScope',
+            regionId: state.regionId,
+            reason: result.reason,
+          }
+        }
+        return { step: 'irritability', regionId: state.regionId, answers: [] }
       }
-      if (event.type === 'BACK') return { step: 'redFlags', answers: {} }
+      if (event.type === 'BACK') {
+        return { step: 'redFlags', regionId: state.regionId, answers: {} }
+      }
       return state
     }
 
@@ -100,8 +117,9 @@ export function flowReducer(state: FlowState, event: FlowEvent): FlowState {
       return state
 
     case 'irritability': {
+      const region = getRegion(state.regionId)
       if (event.type === 'ANSWER' && typeof event.value === 'string') {
-        const question = shoulder.irritabilityQuestions.find(
+        const question = region.irritabilityQuestions.find(
           (q) => q.id === event.questionId,
         )
         if (question === undefined) return state
@@ -116,31 +134,51 @@ export function flowReducer(state: FlowState, event: FlowEvent): FlowState {
         return { ...state, answers }
       }
       if (event.type === 'SUBMIT_STEP') {
-        const allAnswered = shoulder.irritabilityQuestions.every((question) =>
+        const allAnswered = region.irritabilityQuestions.every((question) =>
           state.answers.some((answer) => answer.questionId === question.id),
         )
         if (!allAnswered) return state
-        const irritability = classifyIrritability(shoulder, state.answers)
-        const level = startingLevel(shoulder, irritability)
-        return { step: 'plan', current: { level, load: 'normal' } }
+        const irritability = classifyIrritability(region, state.answers)
+        const level = startingLevel(region, irritability)
+        return {
+          step: 'plan',
+          regionId: state.regionId,
+          current: { level, load: 'normal' },
+        }
       }
-      if (event.type === 'BACK') return { step: 'scope', answers: {} }
+      if (event.type === 'BACK') {
+        return { step: 'scope', regionId: state.regionId, answers: {} }
+      }
       return state
     }
 
     case 'plan': {
-      if (event.type === 'SUBMIT_STEP')
-        return { step: 'checkIn', current: state.current }
-      if (event.type === 'BACK') return { step: 'irritability', answers: [] }
+      if (event.type === 'SUBMIT_STEP') {
+        return {
+          step: 'checkIn',
+          regionId: state.regionId,
+          current: state.current,
+        }
+      }
+      if (event.type === 'BACK') {
+        return { step: 'irritability', regionId: state.regionId, answers: [] }
+      }
       return state
     }
 
     case 'checkIn': {
+      const region = getRegion(state.regionId)
       if (event.type === 'SUBMIT_CHECK_IN') {
-        const result = evaluateCheckIn(shoulder, state.current, event.checkIn)
-        return { step: 'plan', current: result.next }
+        const result = evaluateCheckIn(region, state.current, event.checkIn)
+        return { step: 'plan', regionId: state.regionId, current: result.next }
       }
-      if (event.type === 'BACK') return { step: 'plan', current: state.current }
+      if (event.type === 'BACK') {
+        return {
+          step: 'plan',
+          regionId: state.regionId,
+          current: state.current,
+        }
+      }
       return state
     }
   }
