@@ -1,0 +1,386 @@
+/* Screen shell */
+.screen {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  flex: 1;
+}
+
+.screen-title {
+  margin: 0;
+  font-family: var(--font-heading);
+  font-weight: 600;
+  font-size: 30px;
+  line-height: 1.15;
+  letter-spacing: -0.015em;
+}
+
+.eyebrow {
+  margin: 0 0 -8px;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.tone-step .eyebrow,
+.tone-out .eyebrow {
+  color: var(--muted);
+}
+
+.tone-decision .eyebrow {
+  color: var(--primary);
+}
+
+.tone-stop .eyebrow {
+  color: var(--accent);
+}
+
+.screen-body {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  flex: 1;
+}
+
+/* Cards */
+.card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  padding: 18px 20px;
+  margin: 0;
+}
+
+.tone-decision .card {
+  background: var(--primary-soft);
+  border-color: var(--primary);
+}
+
+.tone-stop .card {
+  background: var(--accent-soft);
+  border-color: var(--accent);
+}
+
+.tone-out .card {
+  border-color: var(--body);
+  border-style: dashed;
+}
+
+.card.exercise {
+  background: var(--surface);
+  border-color: var(--primary);
+}
+
+.question-text {
+  padding: 0;
+  font-size: 17px;
+  font-weight: 600;
+  line-height: 1.4;
+  color: var(--ink);
+}
+
+.card.question .question-text {
+  margin: 0 0 14px;
+}
+
+/* Pill radio options */
+.pill-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.pill {
+  display: flex;
+  padding: 0;
+  border: 0;
+}
+
+.pill input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  opacity: 0;
+}
+
+.pill span {
+  display: inline-flex;
+  align-items: center;
+  border: 1.5px solid var(--line);
+  border-radius: 999px;
+  padding: 10px 18px;
+  font-size: 15px;
+  font-weight: 600;
+  background: var(--surface);
+  color: var(--ink);
+  cursor: pointer;
+}
+
+.pill input:checked + span {
+  background: var(--ink);
+  border-color: var(--ink);
+  color: #fff;
+}
+
+.pill input:focus-visible + span {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+
+.tone-stop .pill input:focus-visible + span {
+  outline-color: var(--accent);
+}
+
+/* Buttons */
+button {
+  font-family: var(--font-body);
+}
+
+.btn-primary {
+  display: block;
+  width: 100%;
+  border: 0;
+  border-radius: 999px;
+  padding: 15px 20px;
+  font-size: 16px;
+  font-weight: 600;
+  background: var(--primary);
+  color: #fff;
+  cursor: pointer;
+}
+
+.btn-primary:hover {
+  background: #0c5a4e;
+}
+
+.btn-primary:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.btn-accent {
+  background: var(--accent);
+}
+
+.btn-accent:hover {
+  background: #c94e2b;
+}
+
+.btn-ghost {
+  display: block;
+  margin: 4px auto 0;
+  border: 0;
+  border-radius: 999px;
+  padding: 10px 18px;
+  background: none;
+  color: var(--muted);
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.btn-ghost:hover {
+  color: var(--ink);
+  background: var(--surface);
+}
+
+.btn-neutral {
+  display: block;
+  width: 100%;
+  border: 1.5px solid var(--line);
+  border-radius: 999px;
+  padding: 13px 20px;
+  background: var(--surface);
+  color: var(--muted);
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.btn-neutral:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+:where(button, input, a, [tabindex]):focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+
+.tone-stop :focus-visible {
+  outline-color: var(--accent);
+}
+
+/* Chips */
+.chip {
+  display: inline-block;
+  padding: 5px 12px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.chip-primary {
+  background: var(--primary-soft);
+  color: var(--primary);
+}
+
+.chip-accent {
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+.chip-neutral {
+  background: var(--bg);
+  color: var(--muted);
+}
+
+.chip-strong {
+  background: var(--accent);
+  color: #fff;
+}
+
+.chip-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+/* Referral and out-of-scope */
+.referral-card {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 14px;
+}
+
+.referral-copy {
+  margin: 0;
+  font-family: var(--font-heading);
+  font-weight: 600;
+  font-size: 24px;
+  line-height: 1.3;
+  color: var(--accent);
+}
+
+.outcome-copy {
+  margin: 0;
+  font-size: 18px;
+  line-height: 1.5;
+}
+
+/* Plan screen */
+.plan-message {
+  margin: 0;
+  padding: 16px 18px;
+  border-radius: 18px;
+  border: 1px solid var(--line);
+  font-size: 16px;
+  font-weight: 500;
+  line-height: 1.45;
+}
+
+.plan-message.tone-primary {
+  background: var(--primary-soft);
+  border-color: var(--primary);
+}
+
+.plan-message.tone-accent {
+  background: var(--accent-soft);
+  border-color: var(--accent);
+}
+
+.plan-message.tone-neutral {
+  background: var(--bg);
+  color: var(--muted);
+}
+
+.plan-note {
+  margin: 0;
+  font-size: 14px;
+  color: var(--muted);
+}
+
+/* Exercise card */
+.card.exercise {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.exercise-video {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: var(--bg);
+  border-radius: 14px;
+  padding: 10px 14px;
+}
+
+.video-thumb {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  background: var(--primary-soft);
+  color: var(--primary);
+  flex: none;
+}
+
+.video-state {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--muted);
+}
+
+.exercise-name {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.exercise-dosage {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--primary);
+}
+
+.exercise-cue {
+  margin: 0;
+  font-size: 15px;
+  line-height: 1.5;
+  color: var(--muted);
+}
+
+/* Pain slider */
+.pain-value {
+  margin: 0;
+  font-family: var(--font-heading);
+  font-weight: 600;
+  font-size: 34px;
+}
+
+.pain-slider input[type='range'] {
+  width: 100%;
+  margin: 6px 0;
+  accent-color: var(--primary);
+  cursor: pointer;
+}
+
+.pain-scale {
+  display: flex;
+  justify-content: space-between;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+/* Map screen */
+.map-hint {
+  margin: 0;
+  color: var(--muted);
+}

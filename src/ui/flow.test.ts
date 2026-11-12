@@ -325,6 +325,7 @@ describe('the plan and the weekly check-in', () => {
       step: 'plan',
       regionId: 'shoulder',
       current: { level: 2, load: 'normal' },
+      lastDecision: 'up',
     })
   })
 
@@ -341,6 +342,7 @@ describe('the plan and the weekly check-in', () => {
       step: 'plan',
       regionId: 'shoulder',
       current: { level: 2, load: 'reduced' },
+      lastDecision: 'reduceLoad',
     })
   })
 
@@ -356,6 +358,40 @@ describe('the plan and the weekly check-in', () => {
       step: 'plan',
       regionId: 'shoulder',
       current: { level: 3, load: 'normal' },
+      lastDecision: 'up',
+    })
+  })
+
+  it('a flare at a reduced load on level 2 steps down a level', () => {
+    const state: FlowState = {
+      step: 'checkIn',
+      regionId: 'shoulder',
+      current: { level: 2, load: 'reduced' },
+    }
+    const flare: CheckIn = { ...goodCheckIn, painDuring: 5 }
+    expect(
+      flowReducer(state, { type: 'SUBMIT_CHECK_IN', checkIn: flare }),
+    ).toEqual({
+      step: 'plan',
+      regionId: 'shoulder',
+      current: { level: 1, load: 'normal' },
+      lastDecision: 'down',
+    })
+  })
+
+  it('a good check-in at a reduced load restores the normal load', () => {
+    const state: FlowState = {
+      step: 'checkIn',
+      regionId: 'shoulder',
+      current: { level: 2, load: 'reduced' },
+    }
+    expect(
+      flowReducer(state, { type: 'SUBMIT_CHECK_IN', checkIn: goodCheckIn }),
+    ).toEqual({
+      step: 'plan',
+      regionId: 'shoulder',
+      current: { level: 2, load: 'normal' },
+      lastDecision: 'restoreLoad',
     })
   })
 
@@ -372,6 +408,7 @@ describe('the plan and the weekly check-in', () => {
       step: 'plan',
       regionId: 'shoulder',
       current: { level: 2, load: 'normal' },
+      lastDecision: 'stay',
     })
   })
 
@@ -421,6 +458,7 @@ describe('the plan and the weekly check-in', () => {
       step: 'plan',
       regionId: 'shoulder',
       current: { level: 3, load: 'normal' },
+      lastDecision: 'up',
     })
   })
 
@@ -435,6 +473,32 @@ describe('the plan and the weekly check-in', () => {
       regionId: 'shoulder',
       current: { level: 2, load: 'normal' },
     })
+  })
+
+  it('a back from the check-in keeps the previous decision on the plan', () => {
+    const state: FlowState = {
+      step: 'checkIn',
+      regionId: 'shoulder',
+      current: { level: 2, load: 'normal' },
+      lastDecision: 'up',
+    }
+    expect(flowReducer(state, { type: 'BACK' })).toEqual({
+      step: 'plan',
+      regionId: 'shoulder',
+      current: { level: 2, load: 'normal' },
+      lastDecision: 'up',
+    })
+  })
+
+  it('a plan reached from the irritability questions has no recorded decision', () => {
+    const plan = toPlan('low')
+    if (plan.step !== 'plan') throw new Error('expected the plan screen')
+    expect(plan).toEqual({
+      step: 'plan',
+      regionId: 'shoulder',
+      current: { level: 2, load: 'normal' },
+    })
+    expect(plan.lastDecision).toBeUndefined()
   })
 
   it('a back from the plan goes to the irritability questions', () => {
