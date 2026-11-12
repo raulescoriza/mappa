@@ -1,7 +1,7 @@
 import { useReducer } from 'react'
 
 import { getRegion } from './domain/regions'
-import { PrimaryButton } from './ui/components/PrimaryButton'
+import { BodyMap } from './ui/components/BodyMap'
 import { Screen } from './ui/components/Screen'
 import { flowReducer, initialState } from './ui/flow'
 import type { FlowEvent } from './ui/flow'
@@ -18,20 +18,11 @@ type Dispatch = (event: FlowEvent) => void
 function MapScreen({ dispatch }: { dispatch: Dispatch }) {
   return (
     <Screen title="Where does it hurt?">
-      <p className="map-hint">Pick the region you would like to work on.</p>
-      <PrimaryButton
-        onClick={() =>
-          dispatch({ type: 'SELECT_REGION', regionId: 'shoulder' })
+      <BodyMap
+        onSelect={(regionId, side) =>
+          dispatch({ type: 'SELECT_REGION', regionId, side })
         }
-      >
-        Select shoulder
-      </PrimaryButton>
-      <button type="button" className="btn-neutral" disabled>
-        Neck (coming soon)
-      </button>
-      <button type="button" className="btn-neutral" disabled>
-        Lower back (coming soon)
-      </button>
+      />
     </Screen>
   )
 }
