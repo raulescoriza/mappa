@@ -16,29 +16,32 @@ import type {
   RedFlag,
   RedFlagAnswers,
 } from '../domain/types'
+import type { BodySide } from './bodyMap/shapes'
 
 export type FlowState =
   | { step: 'map' }
-  | { step: 'redFlags'; regionId: string; answers: RedFlagAnswers }
-  | { step: 'scope'; regionId: string; answers: ExclusionAnswers }
-  | { step: 'referral'; regionId: string; flag: RedFlag }
-  | { step: 'outOfScope'; regionId: string; reason: ExclusionQuestion }
-  | { step: 'irritability'; regionId: string; answers: IrritabilityAnswer[] }
+  | { step: 'redFlags'; regionId: string; side: BodySide; answers: RedFlagAnswers }
+  | { step: 'scope'; regionId: string; side: BodySide; answers: ExclusionAnswers }
+  | { step: 'referral'; regionId: string; side: BodySide; flag: RedFlag }
+  | { step: 'outOfScope'; regionId: string; side: BodySide; reason: ExclusionQuestion }
+  | { step: 'irritability'; regionId: string; side: BodySide; answers: IrritabilityAnswer[] }
   | {
       step: 'plan'
       regionId: string
+      side: BodySide
       current: LevelState
       lastDecision?: CheckInDecision
     }
   | {
       step: 'checkIn'
       regionId: string
+      side: BodySide
       current: LevelState
       lastDecision?: CheckInDecision
     }
 
 export type FlowEvent =
-  | { type: 'SELECT_REGION'; regionId: string }
+  | { type: 'SELECT_REGION'; regionId: string; side: BodySide }
   | { type: 'ANSWER'; questionId: string; value: string | boolean }
   | { type: 'SUBMIT_STEP' }
   | { type: 'SUBMIT_CHECK_IN'; checkIn: CheckIn }
@@ -56,7 +59,12 @@ export function flowReducer(state: FlowState, event: FlowEvent): FlowState {
         event.type === 'SELECT_REGION' &&
         isRegisteredRegion(event.regionId)
       ) {
-        return { step: 'redFlags', regionId: event.regionId, answers: {} }
+        return {
+          step: 'redFlags',
+          regionId: event.regionId,
+          side: event.side,
+          answers: {},
+        }
       }
       return state
     }
@@ -79,10 +87,16 @@ export function flowReducer(state: FlowState, event: FlowEvent): FlowState {
           return {
             step: 'referral',
             regionId: state.regionId,
+            side: state.side,
             flag: result.flag,
           }
         }
-        return { step: 'scope', regionId: state.regionId, answers: {} }
+        return {
+          step: 'scope',
+          regionId: state.regionId,
+          side: state.side,
+          answers: {},
+        }
       }
       if (event.type === 'BACK') return { step: 'map' }
       return state
@@ -109,16 +123,27 @@ export function flowReducer(state: FlowState, event: FlowEvent): FlowState {
           return state
         const result = checkScope(region, state.answers)
         if (result.result === 'outOfScope') {
-          return {
-            step: 'outOfScope',
-            regionId: state.regionId,
-            reason: result.reason,
+            return {
+              step: 'outOfScope',
+              regionId: state.regionId,
+              side: state.side,
+              reason: result.reason,
+            }
           }
-        }
-        return { step: 'irritability', regionId: state.regionId, answers: [] }
+          return {
+            step: 'irritability',
+            regionId: state.regionId,
+            side: state.side,
+            answers: [],
+          }
       }
       if (event.type === 'BACK') {
-        return { step: 'redFlags', regionId: state.regionId, answers: {} }
+        return {
+          step: 'redFlags',
+          regionId: state.regionId,
+          side: state.side,
+          answers: {},
+        }
       }
       return state
     }
@@ -154,11 +179,17 @@ export function flowReducer(state: FlowState, event: FlowEvent): FlowState {
         return {
           step: 'plan',
           regionId: state.regionId,
+          side: state.side,
           current: { level, load: 'normal' },
         }
       }
       if (event.type === 'BACK') {
-        return { step: 'scope', regionId: state.regionId, answers: {} }
+        return {
+          step: 'scope',
+          regionId: state.regionId,
+          side: state.side,
+          answers: {},
+        }
       }
       return state
     }
@@ -168,12 +199,18 @@ export function flowReducer(state: FlowState, event: FlowEvent): FlowState {
         return {
           step: 'checkIn',
           regionId: state.regionId,
+          side: state.side,
           current: state.current,
           lastDecision: state.lastDecision,
         }
       }
       if (event.type === 'BACK') {
-        return { step: 'irritability', regionId: state.regionId, answers: [] }
+        return {
+          step: 'irritability',
+          regionId: state.regionId,
+          side: state.side,
+          answers: [],
+        }
       }
       return state
     }
@@ -185,6 +222,7 @@ export function flowReducer(state: FlowState, event: FlowEvent): FlowState {
         return {
           step: 'plan',
           regionId: state.regionId,
+          side: state.side,
           current: result.next,
           lastDecision: result.decision,
         }
@@ -193,6 +231,7 @@ export function flowReducer(state: FlowState, event: FlowEvent): FlowState {
         return {
           step: 'plan',
           regionId: state.regionId,
+          side: state.side,
           current: state.current,
           lastDecision: state.lastDecision,
         }

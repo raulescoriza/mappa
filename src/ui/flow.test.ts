@@ -11,10 +11,11 @@ const goodCheckIn: CheckIn = {
   worseNextMorningTwice: false,
 }
 
-function toRedFlags(): FlowState {
+function toRedFlags(side: 'left' | 'right' = 'right'): FlowState {
   return flowReducer(initialState, {
     type: 'SELECT_REGION',
     regionId: 'shoulder',
+    side,
   })
 }
 
@@ -65,17 +66,33 @@ describe('selecting a region', () => {
     const state = flowReducer(initialState, {
       type: 'SELECT_REGION',
       regionId: 'shoulder',
+      side: 'right',
     })
     expect(state).toEqual({
       step: 'redFlags',
       regionId: 'shoulder',
+      side: 'right',
+      answers: {},
+    })
+  })
+
+  it('the selected side is kept on the red-flag screen', () => {
+    const state = flowReducer(initialState, {
+      type: 'SELECT_REGION',
+      regionId: 'shoulder',
+      side: 'left',
+    })
+    expect(state).toEqual({
+      step: 'redFlags',
+      regionId: 'shoulder',
+      side: 'left',
       answers: {},
     })
   })
 
   it('selecting a region that is not registered is ignored', () => {
     expect(
-      flowReducer(initialState, { type: 'SELECT_REGION', regionId: 'knee' }),
+      flowReducer(initialState, { type: 'SELECT_REGION', regionId: 'knee', side: 'left' }),
     ).toBe(initialState)
   })
 })
@@ -95,6 +112,7 @@ describe('the red-flag screen', () => {
       expect(state).toEqual({
         step: 'referral',
         regionId: 'shoulder',
+        side: 'right',
         flag: target,
       })
     }
@@ -104,7 +122,12 @@ describe('the red-flag screen', () => {
     const state = flowReducer(toRedFlagsAnswered(false), {
       type: 'SUBMIT_STEP',
     })
-    expect(state).toEqual({ step: 'scope', regionId: 'shoulder', answers: {} })
+    expect(state).toEqual({
+      step: 'scope',
+      regionId: 'shoulder',
+      side: 'right',
+      answers: {},
+    })
   })
 
   it('several red flags answered yes refer to the most urgent one', () => {
@@ -120,6 +143,7 @@ describe('the red-flag screen', () => {
     expect(state).toEqual({
       step: 'referral',
       regionId: 'shoulder',
+      side: 'right',
       flag: expect.objectContaining({ id: 'cardiac', urgency: 'emergency' }),
     })
   })
@@ -167,6 +191,7 @@ describe('the exclusion screen', () => {
       expect(state).toEqual({
         step: 'outOfScope',
         regionId: 'shoulder',
+        side: 'right',
         reason: target,
       })
     }
@@ -184,6 +209,7 @@ describe('the exclusion screen', () => {
     expect(flowReducer(state, { type: 'SUBMIT_STEP' })).toEqual({
       step: 'irritability',
       regionId: 'shoulder',
+      side: 'right',
       answers: [],
     })
   })
@@ -202,6 +228,7 @@ describe('the exclusion screen', () => {
     expect(flowReducer(toExclusions(), { type: 'BACK' })).toEqual({
       step: 'redFlags',
       regionId: 'shoulder',
+      side: 'right',
       answers: {},
     })
   })
@@ -249,6 +276,7 @@ describe('the irritability questions', () => {
     expect(toPlan('high')).toEqual({
       step: 'plan',
       regionId: 'shoulder',
+      side: 'right',
       current: { level: 1, load: 'normal' },
     })
   })
@@ -257,6 +285,7 @@ describe('the irritability questions', () => {
     expect(toPlan('moderate')).toEqual({
       step: 'plan',
       regionId: 'shoulder',
+      side: 'right',
       current: { level: 2, load: 'normal' },
     })
   })
@@ -265,7 +294,30 @@ describe('the irritability questions', () => {
     expect(toPlan('low')).toEqual({
       step: 'plan',
       regionId: 'shoulder',
+      side: 'right',
       current: { level: 2, load: 'normal' },
+    })
+  })
+
+  it('the chosen side is kept until the plan', () => {
+    let state = toRedFlags('left')
+    for (const flag of shoulder.redFlags) {
+      state = flowReducer(state, { type: 'ANSWER', questionId: flag.id, value: false })
+    }
+    state = flowReducer(state, { type: 'SUBMIT_STEP' })
+    for (const question of shoulder.exclusions) {
+      state = flowReducer(state, {
+        type: 'ANSWER',
+        questionId: question.id,
+        value: false,
+      })
+    }
+    state = flowReducer(state, { type: 'SUBMIT_STEP' })
+    expect(state).toEqual({
+      step: 'irritability',
+      regionId: 'shoulder',
+      side: 'left',
+      answers: [],
     })
   })
 
@@ -294,6 +346,7 @@ describe('the irritability questions', () => {
     expect(flowReducer(toIrritability(), { type: 'BACK' })).toEqual({
       step: 'scope',
       regionId: 'shoulder',
+      side: 'right',
       answers: {},
     })
   })
@@ -304,11 +357,13 @@ describe('the plan and the weekly check-in', () => {
     const state: FlowState = {
       step: 'plan',
       regionId: 'shoulder',
+      side: 'right',
       current: { level: 2, load: 'reduced' },
     }
     expect(flowReducer(state, { type: 'SUBMIT_STEP' })).toEqual({
       step: 'checkIn',
       regionId: 'shoulder',
+      side: 'right',
       current: { level: 2, load: 'reduced' },
     })
   })
@@ -317,6 +372,7 @@ describe('the plan and the weekly check-in', () => {
     const state: FlowState = {
       step: 'checkIn',
       regionId: 'shoulder',
+      side: 'right',
       current: { level: 1, load: 'normal' },
     }
     expect(
@@ -324,6 +380,7 @@ describe('the plan and the weekly check-in', () => {
     ).toEqual({
       step: 'plan',
       regionId: 'shoulder',
+      side: 'right',
       current: { level: 2, load: 'normal' },
       lastDecision: 'up',
     })
@@ -333,6 +390,7 @@ describe('the plan and the weekly check-in', () => {
     const state: FlowState = {
       step: 'checkIn',
       regionId: 'shoulder',
+      side: 'right',
       current: { level: 2, load: 'normal' },
     }
     const flare: CheckIn = { ...goodCheckIn, painDuring: 6 }
@@ -341,6 +399,7 @@ describe('the plan and the weekly check-in', () => {
     ).toEqual({
       step: 'plan',
       regionId: 'shoulder',
+      side: 'right',
       current: { level: 2, load: 'reduced' },
       lastDecision: 'reduceLoad',
     })
@@ -350,6 +409,7 @@ describe('the plan and the weekly check-in', () => {
     const state: FlowState = {
       step: 'checkIn',
       regionId: 'shoulder',
+      side: 'right',
       current: { level: 3, load: 'normal' },
     }
     expect(
@@ -357,6 +417,7 @@ describe('the plan and the weekly check-in', () => {
     ).toEqual({
       step: 'plan',
       regionId: 'shoulder',
+      side: 'right',
       current: { level: 3, load: 'normal' },
       lastDecision: 'up',
     })
@@ -366,6 +427,7 @@ describe('the plan and the weekly check-in', () => {
     const state: FlowState = {
       step: 'checkIn',
       regionId: 'shoulder',
+      side: 'right',
       current: { level: 2, load: 'reduced' },
     }
     const flare: CheckIn = { ...goodCheckIn, painDuring: 5 }
@@ -374,6 +436,7 @@ describe('the plan and the weekly check-in', () => {
     ).toEqual({
       step: 'plan',
       regionId: 'shoulder',
+      side: 'right',
       current: { level: 1, load: 'normal' },
       lastDecision: 'down',
     })
@@ -383,6 +446,7 @@ describe('the plan and the weekly check-in', () => {
     const state: FlowState = {
       step: 'checkIn',
       regionId: 'shoulder',
+      side: 'right',
       current: { level: 2, load: 'reduced' },
     }
     expect(
@@ -390,6 +454,7 @@ describe('the plan and the weekly check-in', () => {
     ).toEqual({
       step: 'plan',
       regionId: 'shoulder',
+      side: 'right',
       current: { level: 2, load: 'normal' },
       lastDecision: 'restoreLoad',
     })
@@ -399,6 +464,7 @@ describe('the plan and the weekly check-in', () => {
     const state: FlowState = {
       step: 'checkIn',
       regionId: 'shoulder',
+      side: 'right',
       current: { level: 2, load: 'normal' },
     }
     const notEnough: CheckIn = { ...goodCheckIn, allSetsCompleted: false }
@@ -407,6 +473,7 @@ describe('the plan and the weekly check-in', () => {
     ).toEqual({
       step: 'plan',
       regionId: 'shoulder',
+      side: 'right',
       current: { level: 2, load: 'normal' },
       lastDecision: 'stay',
     })
@@ -414,7 +481,11 @@ describe('the plan and the weekly check-in', () => {
 
   it('walking through the whole flow from the map ends back on the plan screen', () => {
     let state = initialState
-    state = flowReducer(state, { type: 'SELECT_REGION', regionId: 'shoulder' })
+    state = flowReducer(state, {
+      type: 'SELECT_REGION',
+      regionId: 'shoulder',
+      side: 'right',
+    })
     for (const flag of shoulder.redFlags) {
       state = flowReducer(state, {
         type: 'ANSWER',
@@ -442,12 +513,14 @@ describe('the plan and the weekly check-in', () => {
     expect(state).toEqual({
       step: 'plan',
       regionId: 'shoulder',
+      side: 'right',
       current: { level: 2, load: 'normal' },
     })
     state = flowReducer(state, { type: 'SUBMIT_STEP' })
     expect(state).toEqual({
       step: 'checkIn',
       regionId: 'shoulder',
+      side: 'right',
       current: { level: 2, load: 'normal' },
     })
     state = flowReducer(state, {
@@ -457,6 +530,7 @@ describe('the plan and the weekly check-in', () => {
     expect(state).toEqual({
       step: 'plan',
       regionId: 'shoulder',
+      side: 'right',
       current: { level: 3, load: 'normal' },
       lastDecision: 'up',
     })
@@ -466,11 +540,13 @@ describe('the plan and the weekly check-in', () => {
     const state: FlowState = {
       step: 'checkIn',
       regionId: 'shoulder',
+      side: 'right',
       current: { level: 2, load: 'normal' },
     }
     expect(flowReducer(state, { type: 'BACK' })).toEqual({
       step: 'plan',
       regionId: 'shoulder',
+      side: 'right',
       current: { level: 2, load: 'normal' },
     })
   })
@@ -479,12 +555,14 @@ describe('the plan and the weekly check-in', () => {
     const state: FlowState = {
       step: 'checkIn',
       regionId: 'shoulder',
+      side: 'right',
       current: { level: 2, load: 'normal' },
       lastDecision: 'up',
     }
     expect(flowReducer(state, { type: 'BACK' })).toEqual({
       step: 'plan',
       regionId: 'shoulder',
+      side: 'right',
       current: { level: 2, load: 'normal' },
       lastDecision: 'up',
     })
@@ -496,6 +574,7 @@ describe('the plan and the weekly check-in', () => {
     expect(plan).toEqual({
       step: 'plan',
       regionId: 'shoulder',
+      side: 'right',
       current: { level: 2, load: 'normal' },
     })
     expect(plan.lastDecision).toBeUndefined()
@@ -505,11 +584,13 @@ describe('the plan and the weekly check-in', () => {
     const state: FlowState = {
       step: 'plan',
       regionId: 'shoulder',
+      side: 'right',
       current: { level: 1, load: 'normal' },
     }
     expect(flowReducer(state, { type: 'BACK' })).toEqual({
       step: 'irritability',
       regionId: 'shoulder',
+      side: 'right',
       answers: [],
     })
   })
@@ -529,15 +610,22 @@ describe('the plan and the weekly check-in', () => {
       toRedFlags(),
       toIrritability(),
       toPlan('high'),
-      { step: 'referral', regionId: 'shoulder', flag: shoulder.redFlags[0] },
+      {
+        step: 'referral',
+        regionId: 'shoulder',
+        side: 'right',
+        flag: shoulder.redFlags[0],
+      },
       {
         step: 'outOfScope',
         regionId: 'shoulder',
+        side: 'right',
         reason: shoulder.exclusions[0],
       },
       {
         step: 'checkIn',
         regionId: 'shoulder',
+        side: 'right',
         current: { level: 2, load: 'normal' },
       },
     ]
