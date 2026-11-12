@@ -12,9 +12,10 @@ export function ChoiceQuestion({
   onChange: (label: string) => void
 }) {
   const name = useId()
+  const labelId = useId()
   return (
-    <fieldset className="card question">
-      <legend className="question-text">{question}</legend>
+    <fieldset className="card question" aria-labelledby={labelId}>
+      <p className="question-text" id={labelId}>{question}</p>
       <div className="pill-row">
         {options.map((label) => (
           <label key={label} className="pill">

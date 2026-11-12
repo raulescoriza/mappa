@@ -1,0 +1,1163 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Mappa – Rehab Body Map · Case study</title>
+    <meta
+      name="description"
+      content="Case study: an interactive body map that links anatomical regions to exercises graded by symptom, level and recovery phase. Designed by Raúl Escoriza, physiotherapist and Android developer."
+    />
+    <meta property="og:title" content="Mappa – Rehab body map · Case study" />
+    <meta
+      property="og:description"
+      content="How a rehab app decides whether it is safe to show exercises, where to start and when to progress. Designed by a physiotherapist."
+    />
+    <meta
+      property="og:image"
+      content="https://raulescoriza.github.io/assets/photo.jpg"
+    />
+    <meta property="og:type" content="article" />
+    <meta name="theme-color" content="#F5F3EE" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Fraunces:opsz,wght@9..144,600&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      :root {
+        --bg: #f5f3ee;
+        --surface: #ffffff;
+        --ink: #14201c;
+        --muted: #5a6763;
+        --primary: #0e6b5c;
+        --primary-soft: #dceee8;
+        --accent: #e2603f;
+        --accent-soft: #fbe3da;
+        --line: #e2ddd3;
+        --body: #d8d2c6;
+        --serif: 'Fraunces', Georgia, serif;
+        --sans: 'DM Sans', system-ui, sans-serif;
+      }
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+      html {
+        scroll-behavior: smooth;
+      }
+      body {
+        background: var(--bg);
+        color: var(--ink);
+        font-family: var(--sans);
+        font-size: 17px;
+        line-height: 1.6;
+        -webkit-font-smoothing: antialiased;
+      }
+      a {
+        color: inherit;
+      }
+      .wrap {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 0 24px;
+      }
+      h1,
+      h2,
+      h3 {
+        font-family: var(--serif);
+        font-weight: 600;
+        letter-spacing: -0.015em;
+        line-height: 1.1;
+      }
+      h1 {
+        font-size: clamp(38px, 6vw, 64px);
+      }
+      h2 {
+        font-size: clamp(30px, 4vw, 44px);
+        max-width: 760px;
+      }
+      h3 {
+        font-family: var(--sans);
+        font-weight: 600;
+        font-size: 19px;
+        letter-spacing: 0;
+        line-height: 1.3;
+      }
+      .eyebrow {
+        font-size: 13px;
+        font-weight: 700;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        color: var(--primary);
+        margin-bottom: 14px;
+      }
+      .muted {
+        color: var(--muted);
+      }
+      .chip {
+        display: inline-block;
+        font-size: 13px;
+        font-weight: 600;
+        padding: 5px 12px;
+        border-radius: 999px;
+      }
+      .chip.accent {
+        background: var(--accent-soft);
+        color: var(--accent);
+      }
+      .chip.primary {
+        background: var(--primary-soft);
+        color: var(--primary);
+      }
+      .chip.neutral {
+        background: var(--bg);
+        color: var(--muted);
+      }
+      section {
+        padding: 96px 0;
+      }
+      section.alt {
+        background: var(--surface);
+      }
+
+      /* nav */
+      nav {
+        padding: 24px 0;
+      }
+      nav .wrap {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 16px;
+        flex-wrap: wrap;
+      }
+      .back {
+        text-decoration: none;
+        font-weight: 600;
+        font-size: 15px;
+      }
+      .back:hover {
+        color: var(--primary);
+      }
+
+      /* hero */
+      .hero {
+        padding: 40px 0 96px;
+      }
+      .hero .wrap {
+        display: grid;
+        grid-template-columns: 1.15fr 1fr;
+        gap: 48px;
+        align-items: center;
+      }
+      .hero p.lead {
+        font-size: 20px;
+        color: var(--muted);
+        margin: 24px 0 28px;
+        max-width: 600px;
+      }
+      .benefits {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px 24px;
+        font-size: 15px;
+        font-weight: 500;
+        color: var(--muted);
+      }
+      .benefits span::before {
+        content: '';
+        display: inline-block;
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: var(--primary);
+        margin-right: 8px;
+        vertical-align: middle;
+      }
+      .visual {
+        position: relative;
+        display: flex;
+        justify-content: center;
+      }
+      .visual .blob {
+        position: absolute;
+        width: 88%;
+        aspect-ratio: 1;
+        border-radius: 50%;
+        background: var(--primary-soft);
+        top: 14%;
+      }
+      .phone {
+        position: relative;
+        width: 300px;
+        max-width: 100%;
+        background: var(--ink);
+        border-radius: 44px;
+        padding: 10px;
+        box-shadow: 0 14px 36px rgba(20, 32, 28, 0.14);
+      }
+      .screen {
+        background: var(--surface);
+        border-radius: 36px;
+        overflow: hidden;
+        position: relative;
+        height: 600px;
+      }
+      .screen .top {
+        padding: 18px 22px 0;
+      }
+      .screen .time {
+        font-size: 13px;
+        font-weight: 600;
+      }
+      .screen h4 {
+        font-family: var(--serif);
+        font-weight: 600;
+        font-size: 21px;
+        margin-top: 20px;
+      }
+      .screen .sub {
+        font-size: 13px;
+        color: var(--muted);
+      }
+      .toggle {
+        display: inline-flex;
+        gap: 4px;
+        background: var(--bg);
+        border-radius: 999px;
+        padding: 4px;
+        margin-top: 12px;
+        font-size: 12px;
+        font-weight: 600;
+      }
+      .toggle span {
+        padding: 5px 14px;
+        border-radius: 999px;
+        color: var(--muted);
+      }
+      .toggle span.on {
+        background: var(--ink);
+        color: #fff;
+      }
+      .screen svg {
+        display: block;
+        margin: 6px auto 0;
+      }
+      .sheet {
+        position: absolute;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: var(--surface);
+        border-radius: 26px 26px 0 0;
+        padding: 10px 20px 20px;
+        box-shadow: 0 -6px 24px rgba(20, 32, 28, 0.12);
+      }
+      .sheet .handle {
+        width: 36px;
+        height: 4px;
+        border-radius: 2px;
+        background: var(--line);
+        margin: 0 auto 12px;
+      }
+      .sheet .row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+      .sheet .row strong {
+        font-family: var(--serif);
+        font-weight: 600;
+        font-size: 19px;
+      }
+      .sheet .filters {
+        display: flex;
+        gap: 8px;
+        margin: 10px 0;
+      }
+      .sheet .ex {
+        display: flex;
+        gap: 12px;
+        align-items: center;
+        background: var(--bg);
+        border-radius: 14px;
+        padding: 10px;
+      }
+      .sheet .ex i {
+        width: 40px;
+        height: 40px;
+        border-radius: 10px;
+        background: var(--primary-soft);
+        flex: none;
+      }
+      .sheet .ex b {
+        display: block;
+        font-size: 14px;
+      }
+      .sheet .ex small {
+        font-size: 12px;
+        color: var(--muted);
+      }
+      .float {
+        position: absolute;
+        display: flex;
+        gap: 12px;
+        align-items: center;
+        background: var(--surface);
+        border-radius: 16px;
+        padding: 12px 18px 12px 12px;
+        box-shadow: 0 14px 36px rgba(20, 32, 28, 0.14);
+        font-size: 13px;
+        line-height: 1.35;
+      }
+      .float b {
+        display: block;
+        font-size: 14px;
+      }
+      .float .dot {
+        width: 30px;
+        height: 30px;
+        border-radius: 50%;
+        display: grid;
+        place-items: center;
+        flex: none;
+        font-weight: 700;
+      }
+      .float.f1 {
+        right: -24px;
+        top: 230px;
+      }
+      .float.f1 .dot {
+        background: var(--accent-soft);
+        color: var(--accent);
+        font-family: var(--serif);
+      }
+      .float.f2 {
+        left: -4px;
+        bottom: -14px;
+      }
+      .float.f2 .dot {
+        background: var(--primary);
+        color: #fff;
+      }
+
+      /* role + problem */
+      .grid2 {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 48px;
+        margin-top: 40px;
+      }
+      .card {
+        background: var(--bg);
+        border-radius: 22px;
+        padding: 30px;
+      }
+      .alt .card {
+        background: var(--bg);
+      }
+      section:not(.alt) .card {
+        background: var(--surface);
+        border: 1px solid var(--line);
+      }
+      .card ul {
+        list-style: none;
+        margin-top: 12px;
+      }
+      .card li {
+        padding: 6px 0 6px 20px;
+        position: relative;
+        color: var(--muted);
+      }
+      .card li::before {
+        content: '';
+        position: absolute;
+        left: 0;
+        top: 15px;
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: var(--primary);
+      }
+      .card li strong {
+        color: var(--ink);
+        font-weight: 600;
+      }
+
+      /* steps */
+      .steps {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 24px;
+        margin-top: 48px;
+      }
+      .step .n {
+        width: 44px;
+        height: 44px;
+        border-radius: 50%;
+        background: var(--primary);
+        color: #fff;
+        font-family: var(--serif);
+        font-size: 18px;
+        display: grid;
+        place-items: center;
+        margin-bottom: 16px;
+      }
+      .step p {
+        color: var(--muted);
+        font-size: 16px;
+        margin-top: 8px;
+      }
+
+      /* flow */
+      .legend {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px 18px;
+        margin-top: 20px;
+        font-size: 13px;
+        font-weight: 500;
+        color: var(--muted);
+      }
+      .legend i {
+        display: inline-block;
+        width: 14px;
+        height: 14px;
+        border-radius: 4px;
+        vertical-align: -2px;
+        margin-right: 6px;
+        border: 1.5px solid;
+      }
+      .flow {
+        margin-top: 48px;
+      }
+      .frow {
+        display: grid;
+        grid-template-columns: minmax(0, 500px) 56px minmax(0, 1fr);
+        gap: 16px;
+        align-items: center;
+      }
+      .frow.solo {
+        grid-template-columns: minmax(0, 500px);
+      }
+      .node {
+        border-radius: 16px;
+        padding: 18px 22px;
+        border: 1.5px solid;
+      }
+      .node .tag {
+        font-size: 11px;
+        font-weight: 700;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        margin-bottom: 4px;
+      }
+      .node h3 {
+        font-size: 18px;
+      }
+      .node p {
+        font-size: 14px;
+        color: var(--muted);
+        margin-top: 4px;
+        line-height: 1.5;
+      }
+      .n-step {
+        background: var(--surface);
+        border-color: var(--line);
+      }
+      .n-step .tag {
+        color: var(--muted);
+      }
+      .n-dec {
+        background: var(--primary-soft);
+        border-color: var(--primary);
+      }
+      .n-dec .tag {
+        color: var(--primary);
+      }
+      .n-stop {
+        background: var(--accent-soft);
+        border-color: var(--accent);
+      }
+      .n-stop .tag {
+        color: var(--accent);
+      }
+      .n-out {
+        background: var(--surface);
+        border-color: var(--body);
+        border-style: dashed;
+      }
+      .n-out .tag {
+        color: var(--muted);
+      }
+      .n-lvl {
+        background: var(--surface);
+        border-color: var(--primary);
+      }
+      .n-lvl .tag {
+        color: var(--primary);
+      }
+      .why {
+        border-left: 3px solid var(--primary);
+        padding-left: 14px;
+        margin-top: 12px;
+        font-size: 14px;
+        font-style: italic;
+        line-height: 1.5;
+      }
+      .why::before {
+        content: 'WHY';
+        display: block;
+        font-style: normal;
+        font-size: 11px;
+        font-weight: 700;
+        letter-spacing: 0.1em;
+        color: var(--primary);
+        margin-bottom: 2px;
+      }
+      .branch {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+      }
+      .arrow-r {
+        height: 2px;
+        background: var(--muted);
+        position: relative;
+      }
+      .arrow-r::after {
+        content: '';
+        position: absolute;
+        right: -1px;
+        top: -5px;
+        border: 6px solid transparent;
+        border-left: 8px solid var(--muted);
+        border-right: 0;
+      }
+      .down {
+        width: 500px;
+        max-width: 100%;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        gap: 12px;
+        padding: 10px 0;
+        font-size: 13px;
+        font-weight: 600;
+        color: var(--primary);
+      }
+      .down::before {
+        content: '';
+        width: 2px;
+        height: 34px;
+        background: var(--muted);
+      }
+      .levels {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 20px;
+      }
+      .basis {
+        margin-top: 56px;
+      }
+      .basis p {
+        color: var(--muted);
+        font-size: 15px;
+        margin-top: 8px;
+        max-width: 900px;
+      }
+
+      /* next */
+      .next {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 24px;
+        margin-top: 40px;
+      }
+      .next .status {
+        font-size: 12px;
+        font-weight: 700;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        margin-bottom: 10px;
+      }
+      .done {
+        color: var(--primary);
+      }
+      .todo {
+        color: var(--accent);
+      }
+      .later {
+        color: var(--muted);
+      }
+      .next p {
+        color: var(--muted);
+        font-size: 15px;
+        margin-top: 6px;
+      }
+
+      .disclaimer {
+        background: var(--accent-soft);
+        text-align: center;
+        padding: 22px 24px;
+        font-size: 15px;
+        font-weight: 500;
+      }
+      footer {
+        background: var(--ink);
+        color: #fff;
+        padding: 64px 0;
+      }
+      footer .wrap {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 24px;
+        flex-wrap: wrap;
+      }
+      footer h2 {
+        color: #fff;
+        font-size: 30px;
+      }
+      footer p {
+        opacity: 0.7;
+        margin-top: 8px;
+      }
+      footer a {
+        font-weight: 600;
+      }
+
+      @media (max-width: 900px) {
+        .hero .wrap,
+        .grid2 {
+          grid-template-columns: 1fr;
+        }
+        .visual {
+          margin-top: 16px;
+        }
+        .steps,
+        .levels,
+        .next {
+          grid-template-columns: 1fr;
+        }
+        .frow {
+          grid-template-columns: 1fr;
+        }
+        .frow .arrow-r {
+          width: 2px;
+          height: 28px;
+          margin-left: 24px;
+        }
+        .frow .arrow-r::after {
+          right: auto;
+          top: auto;
+          bottom: -1px;
+          left: -5px;
+          border: 6px solid transparent;
+          border-top: 8px solid var(--muted);
+          border-bottom: 0;
+        }
+        .down {
+          justify-content: flex-start;
+          padding-left: 24px;
+        }
+        section {
+          padding: 72px 0;
+        }
+        .float.f1 {
+          right: 0;
+          top: 250px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <nav>
+      <div class="wrap">
+        <a class="back" href="index.html">← Raúl Escoriza</a>
+        <span class="chip accent">Concept · in development</span>
+      </div>
+    </nav>
+
+    <header class="hero">
+      <div class="wrap">
+        <div>
+          <div class="eyebrow">Case study · Rehabilitation &amp; fitness</div>
+          <h1>Tap where it hurts. Get exercises with clinical reasoning.</h1>
+          <p class="lead">
+            An interactive body map that links every anatomical region to
+            exercises graded by symptom, level and recovery phase — designed by
+            a physiotherapist.
+          </p>
+          <div class="benefits">
+            <span>Physio-designed progressions</span
+            ><span>Red-flag screening</span><span>Plain-language cues</span>
+          </div>
+        </div>
+        <div class="visual" aria-hidden="true">
+          <div class="blob"></div>
+          <div class="phone">
+            <div class="screen">
+              <div class="top">
+                <div class="time">9:41</div>
+                <h4>Where does it hurt?</h4>
+                <div class="sub">Tap a region on the body</div>
+                <div class="toggle">
+                  <span class="on">Front</span><span>Back</span>
+                </div>
+              </div>
+              <svg width="170" height="340" viewBox="0 0 200 400">
+                <g fill="#D8D2C6">
+                  <ellipse cx="100" cy="24" rx="20" ry="24" />
+                  <rect x="92" y="44" width="16" height="14" rx="4" />
+                  <rect x="60" y="54" width="80" height="130" rx="24" />
+                  <rect x="34" y="62" width="22" height="150" rx="11" />
+                  <rect x="144" y="62" width="22" height="150" rx="11" />
+                  <rect x="60" y="172" width="80" height="44" rx="20" />
+                  <rect x="62" y="206" width="34" height="190" rx="17" />
+                  <rect x="104" y="206" width="34" height="190" rx="17" />
+                </g>
+                <g fill="#0E6B5C" fill-opacity=".55">
+                  <circle cx="66" cy="66" r="5" />
+                  <circle cx="100" cy="145" r="5" />
+                  <circle cx="79" cy="197" r="5" />
+                  <circle cx="121" cy="197" r="5" />
+                  <circle cx="79" cy="300" r="5" />
+                  <circle cx="79" cy="385" r="5" />
+                  <circle cx="121" cy="385" r="5" />
+                </g>
+                <circle
+                  cx="134"
+                  cy="66"
+                  r="23"
+                  fill="#E2603F"
+                  fill-opacity=".22"
+                />
+                <circle cx="134" cy="66" r="9" fill="#E2603F" />
+              </svg>
+              <div class="sheet">
+                <div class="handle"></div>
+                <div class="row">
+                  <strong>Right shoulder</strong
+                  ><span class="chip accent">Selected</span>
+                </div>
+                <div class="filters">
+                  <span class="chip neutral">Pain lifting arm</span
+                  ><span class="chip neutral">Moderate</span>
+                </div>
+                <div class="ex">
+                  <i></i>
+                  <div>
+                    <b>Band external rotation</b
+                    ><small>3 × 12–15 · Level 2</small>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="float f1">
+            <span class="dot">2</span>
+            <div>
+              <b>Ready for Level 2</b
+              ><span class="muted">Pain stayed ≤ 3–4/10 for 2 weeks</span>
+            </div>
+          </div>
+          <div class="float f2">
+            <span class="dot">✓</span>
+            <div>
+              <b>Safety screen passed</b
+              ><span class="muted">No red flags reported</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <section class="alt">
+      <div class="wrap">
+        <div class="eyebrow">The problem</div>
+        <h2>
+          Exercise apps list movements by body part. Clinicians decide whether,
+          where to start and when to progress.
+        </h2>
+        <div class="grid2">
+          <div class="card">
+            <h3>What most apps do</h3>
+            <ul>
+              <li>Pick “shoulder”, get a generic list of exercises.</li>
+              <li>No check for signs that need a doctor first.</li>
+              <li>
+                Same starting point for an irritable shoulder and a mildly stiff
+                one.
+              </li>
+              <li>Progression by calendar, or not at all.</li>
+            </ul>
+          </div>
+          <div class="card">
+            <h3>My role in this project</h3>
+            <ul>
+              <li>
+                <strong>Clinical logic:</strong> screening, irritability
+                classification, dosage and progression criteria, from my
+                practice as a physiotherapist.
+              </li>
+              <li>
+                <strong>Product &amp; UX design:</strong> flow, screens and
+                visual design in Figma.
+              </li>
+              <li>
+                <strong>Implementation:</strong> a React prototype of the
+                shoulder flow is next, built AI-assisted.
+              </li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="wrap">
+        <div class="eyebrow">How it works</div>
+        <h2>From a body region to a safe, graded progression</h2>
+        <div class="steps">
+          <div class="card step">
+            <div class="n">1</div>
+            <h3>Pick a region</h3>
+            <p>
+              Tap the area on a front or back body map. Regions follow anatomy —
+              knee, hip, lumbar spine — not vague labels like “leg”.
+            </p>
+          </div>
+          <div class="card step">
+            <div class="n">2</div>
+            <h3>Describe what you feel</h3>
+            <p>
+              Filter by symptom, irritability and recovery phase. Answers that
+              suggest a red flag stop the flow and point you to a professional.
+            </p>
+          </div>
+          <div class="card step">
+            <div class="n">3</div>
+            <h3>Follow a graded progression</h3>
+            <p>
+              Get a short set with dosage, clear cues and the criteria to move
+              up a level — or step back.
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="alt">
+      <div class="wrap">
+        <div class="eyebrow">Design decisions · Shoulder</div>
+        <h2>From a tap on the shoulder to a safe, graded progression</h2>
+        <p class="muted" style="max-width: 820px; margin-top: 16px">
+          How the app decides whether it is safe to show exercises, where to
+          start, and when to progress. The app does not diagnose: it screens,
+          classifies irritability and doses load.
+        </p>
+        <div class="legend">
+          <span
+            ><i
+              style="background: var(--surface); border-color: var(--line)"
+            ></i
+            >Step</span
+          >
+          <span
+            ><i
+              style="
+                background: var(--primary-soft);
+                border-color: var(--primary);
+              "
+            ></i
+            >Decision</span
+          >
+          <span
+            ><i
+              style="
+                background: var(--accent-soft);
+                border-color: var(--accent);
+              "
+            ></i
+            >Stop / refer</span
+          >
+          <span
+            ><i
+              style="
+                background: var(--surface);
+                border-color: var(--body);
+                border-style: dashed;
+              "
+            ></i
+            >Outcome</span
+          >
+          <span
+            ><i
+              style="background: var(--surface); border-color: var(--primary)"
+            ></i
+            >Exercise level</span
+          >
+        </div>
+
+        <div class="flow">
+          <div class="frow solo">
+            <div class="node n-step">
+              <div class="tag">Step 1</div>
+              <h3>User taps the shoulder (left or right)</h3>
+              <p>
+                Front or back view. The region is anatomical, not a vague “arm”.
+              </p>
+            </div>
+          </div>
+          <div class="down"></div>
+
+          <div class="frow">
+            <div>
+              <div class="node n-dec">
+                <div class="tag">Step 2 · Decision</div>
+                <h3>Red-flag screen — 5 yes/no questions</h3>
+                <p>
+                  Trauma with deformity or inability to lift the arm · pain with
+                  exertion plus chest pain, breathlessness or cold sweat · fever
+                  or a red, hot, swollen joint · cancer history, unexplained
+                  weight loss or constant night pain · tingling down the arm or
+                  progressive weakness.
+                </p>
+              </div>
+              <div class="why">
+                Safety comes before engagement. Screening runs before any
+                exercise is visible, even though it adds friction to the first
+                session.
+              </div>
+            </div>
+            <div class="arrow-r"></div>
+            <div class="branch">
+              <div class="node n-stop">
+                <div class="tag">Any “yes” → stop</div>
+                <h3>Show a referral, not exercises</h3>
+                <p>
+                  Trauma → A&amp;E · chest symptoms → emergency number · fever /
+                  hot joint → urgent doctor · cancer, weight loss, night pain →
+                  GP · neurological signs → doctor. Each answer maps to its own
+                  urgency level and copy.
+                </p>
+              </div>
+            </div>
+          </div>
+          <div class="down">All “no”</div>
+
+          <div class="frow">
+            <div>
+              <div class="node n-dec">
+                <div class="tag">Step 3 · Decision</div>
+                <h3>Out-of-scope check</h3>
+                <p>
+                  Recent shoulder surgery? Marked loss of movement even when
+                  someone else moves the arm, especially external rotation?
+                </p>
+              </div>
+              <div class="why">
+                Out of scope is not the same as dangerous. These users get a
+                calm “see a physio in person” message, with different tone and
+                urgency than a red flag.
+              </div>
+            </div>
+            <div class="arrow-r"></div>
+            <div class="branch">
+              <div class="node n-out">
+                <div class="tag">Recent surgery</div>
+                <h3>Follow the surgeon’s protocol</h3>
+                <p>The app does not override post-operative rehab plans.</p>
+              </div>
+              <div class="node n-out">
+                <div class="tag">Marked passive range-of-motion loss</div>
+                <h3>Recommend in-person assessment</h3>
+                <p>
+                  Possible stiff / frozen shoulder: exercise selection needs a
+                  hands-on exam.
+                </p>
+              </div>
+            </div>
+          </div>
+          <div class="down">Neither</div>
+
+          <div class="frow">
+            <div>
+              <div class="node n-dec">
+                <div class="tag">Step 4 · Decision</div>
+                <h3>How irritable is the shoulder?</h3>
+                <p>
+                  Three questions: pain at rest · waking at night · how long
+                  pain lasts after activity (hours / under 1 h / minutes).
+                </p>
+              </div>
+              <div class="why">
+                The starting level depends on how reactive the shoulder is, not
+                on how ambitious the user is.
+              </div>
+            </div>
+            <div class="arrow-r"></div>
+            <div class="branch">
+              <div class="node n-out">
+                <div class="tag">High irritability</div>
+                <h3>Start at Level 1</h3>
+              </div>
+              <div class="node n-out">
+                <div class="tag">Moderate irritability</div>
+                <h3>Start at Level 2</h3>
+              </div>
+              <div class="node n-out">
+                <div class="tag">Low irritability</div>
+                <h3>Start at Level 2 · Level 3 if tolerated</h3>
+              </div>
+            </div>
+          </div>
+          <div class="down"></div>
+
+          <div class="levels">
+            <div class="node n-lvl">
+              <div class="tag">Level 1 · Isometrics</div>
+              <h3>Wall external rotation · wall abduction</h3>
+              <p>
+                5 × 30 s at submaximal effort, no more than mild discomfort.
+                Daily.
+              </p>
+            </div>
+            <div class="node n-lvl">
+              <div class="tag">Level 2 · Light load</div>
+              <h3>Band external rotation · band row · scaption to 90°</h3>
+              <p>3 × 12–15, every other day.</p>
+            </div>
+            <div class="node n-lvl">
+              <div class="tag">Level 3 · Progressive load</div>
+              <h3>
+                Heavier band or weights · light overhead press · incline push-up
+              </h3>
+              <p>3 × 6–8, every other day.</p>
+            </div>
+          </div>
+          <div class="down">Weekly check-in</div>
+
+          <div class="frow">
+            <div>
+              <div class="node n-dec">
+                <div class="tag">Step 5 · Decision</div>
+                <h3>Symptom response over the last ~2 weeks</h3>
+                <p>
+                  Pain during exercise · pain the next morning compared with
+                  baseline · all sets completed without shrugging the shoulder.
+                </p>
+              </div>
+              <div class="why">
+                Progress by symptom response, not by calendar. The same rule
+                works for every level, so the logic stays explainable.
+              </div>
+            </div>
+            <div class="arrow-r"></div>
+            <div class="branch">
+              <div class="node n-out">
+                <div class="tag">
+                  ≤ 3–4/10 during, back to baseline next morning, full sets
+                </div>
+                <h3>Level up</h3>
+              </div>
+              <div class="node n-out">
+                <div class="tag">
+                  Pain rises a little but recovers within 24 h
+                </div>
+                <h3>Stay at this level</h3>
+              </div>
+              <div class="node n-stop">
+                <div class="tag">
+                  &gt; 5/10 during, or worse next morning in 2 sessions in a row
+                </div>
+                <h3>Level down</h3>
+              </div>
+            </div>
+          </div>
+          <div class="down"></div>
+
+          <div class="frow solo">
+            <div class="node n-stop">
+              <div class="tag">Exit</div>
+              <h3>Leave the flow and refer</h3>
+              <p>
+                A red flag appears at any point, or there is no improvement
+                after ~6 weeks → in-person assessment.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div class="basis">
+          <div class="eyebrow">Clinical basis</div>
+          <p>
+            Pain thresholds (≤ 3–4/10 during exercise, back to baseline within
+            24 h) are the criteria I used in clinical practice, in line with
+            pain-monitoring approaches to loading.
+          </p>
+          <p>
+            Durations (~2 weeks to progress, ~6 weeks before referring) are
+            approximate clinical estimates for a prototype, not a validated
+            protocol.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="wrap">
+        <div class="eyebrow">Status</div>
+        <h2>Where the project is</h2>
+        <div class="next">
+          <div class="card">
+            <div class="status done">Done</div>
+            <h3>Product design</h3>
+            <p>
+              Landing, body-map screen and the full shoulder decision flow,
+              designed in Figma.
+            </p>
+          </div>
+          <div class="card">
+            <div class="status todo">Next</div>
+            <h3>React prototype</h3>
+            <p>
+              Body map → shoulder → screening → starting level → three
+              exercises. No accounts, no backend.
+            </p>
+          </div>
+          <div class="card">
+            <div class="status later">Later</div>
+            <h3>More regions &amp; video</h3>
+            <p>
+              Knee and lumbar spine flows, and exercise demos with a consistent
+              AI-generated avatar.
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <div class="disclaimer">
+      Concept prototype. Not intended to diagnose, and not a substitute for an
+      assessment by a healthcare professional.
+    </div>
+
+    <footer>
+      <div class="wrap">
+        <div>
+          <h2>Designed by Raúl Escoriza</h2>
+          <p>Physiotherapist turned Android developer · Munich</p>
+        </div>
+        <div style="display: flex; gap: 24px; flex-wrap: wrap">
+          <a href="mailto:raulescoriza3@gmail.com">Contact</a
+          ><a href="index.html">← Back to portfolio</a>
+        </div>
+      </div>
+    </footer>
+  </body>
+</html>

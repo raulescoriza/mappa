@@ -80,6 +80,10 @@
   color: var(--ink);
 }
 
+.card.question .question-text {
+  margin: 0 0 14px;
+}
+
 /* Pill radio options */
 .pill-row {
   display: flex;

@@ -15,9 +15,10 @@ export function YesNoQuestion({
   onChange: (value: boolean) => void
 }) {
   const name = useId()
+  const labelId = useId()
   return (
-    <fieldset className="card question">
-      <legend className="question-text">{question}</legend>
+    <fieldset className="card question" aria-labelledby={labelId}>
+      <p className="question-text" id={labelId}>{question}</p>
       <div className="pill-row">
         {options.map((option) => (
           <label key={option.label} className="pill">
