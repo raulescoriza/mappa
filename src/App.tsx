@@ -1,38 +1,31 @@
 import { useReducer } from 'react'
 
 import { getRegion } from './domain/regions'
-import { BodyMap } from './ui/components/BodyMap'
-import { Screen } from './ui/components/Screen'
 import { flowReducer, initialState } from './ui/flow'
-import type { FlowEvent } from './ui/flow'
 import { CheckInScreen } from './ui/screens/CheckInScreen'
 import { IrritabilityScreen } from './ui/screens/IrritabilityScreen'
+import { MapScreen } from './ui/screens/MapScreen'
 import { OutOfScopeScreen } from './ui/screens/OutOfScopeScreen'
 import { PlanScreen } from './ui/screens/PlanScreen'
 import { ReferralScreen } from './ui/screens/ReferralScreen'
 import { RedFlagsScreen } from './ui/screens/RedFlagsScreen'
 import { ScopeScreen } from './ui/screens/ScopeScreen'
 
-type Dispatch = (event: FlowEvent) => void
-
-function MapScreen({ dispatch }: { dispatch: Dispatch }) {
-  return (
-    <Screen title="Where does it hurt?">
-      <BodyMap
-        onSelect={(regionId, side) =>
-          dispatch({ type: 'SELECT_REGION', regionId, side })
-        }
-      />
-    </Screen>
-  )
-}
-
 function App() {
   const [state, dispatch] = useReducer(flowReducer, initialState)
 
+  // The body map step manages its own full-bleed layout (top bar, map, and
+  // footer) so the body can be sized by the available height without scrolling.
+  if (state.step === 'map') {
+    return (
+      <MapScreen
+        onSelect={(regionId, side) => dispatch({ type: 'SELECT_REGION', regionId, side })}
+      />
+    )
+  }
+
   return (
     <main className="app">
-      {state.step === 'map' && <MapScreen dispatch={dispatch} />}
       {state.step === 'redFlags' && (
         <RedFlagsScreen
           region={getRegion(state.regionId)}

@@ -1,77 +1,51 @@
 import { useState } from 'react'
 import type { KeyboardEvent } from 'react'
 import { isRegisteredRegion } from '../../domain/regions'
-import { shapesForView } from '../bodyMap/shapes'
+import { BODY_VIEWBOX, shapesForView, silhouette } from '../bodyMap/shapes'
 import type {
-  BodyShape,
   BodySide,
   BodyView,
-  ShapeGeometry,
+  DotShape,
+  PathShape,
+  RegionId,
+  RegionShape,
 } from '../bodyMap/shapes'
-import { Chip } from './Chip'
-import { PrimaryButton } from './PrimaryButton'
 
-// Decorative silhouette behind the region shapes, in map viewBox units.
-const baseParts: ShapeGeometry[] = [
-  { kind: 'ellipse', cx: 100, cy: 24, rx: 20, ry: 24 },
-  { kind: 'rect', x: 92, y: 44, width: 16, height: 14, rx: 4 },
-  { kind: 'rect', x: 60, y: 54, width: 80, height: 130, rx: 24 },
-  { kind: 'rect', x: 60, y: 172, width: 80, height: 44, rx: 20 },
-  { kind: 'rect', x: 34, y: 62, width: 22, height: 150, rx: 11 },
-  { kind: 'rect', x: 144, y: 62, width: 22, height: 150, rx: 11 },
-  { kind: 'rect', x: 62, y: 206, width: 34, height: 190, rx: 17 },
-  { kind: 'rect', x: 104, y: 206, width: 34, height: 190, rx: 17 },
-]
+const views: BodyView[] = ['front', 'back']
 
-function BasePart({ geometry }: { geometry: ShapeGeometry }) {
-  switch (geometry.kind) {
-    case 'ellipse':
-      return (
-        <ellipse
-          className="map-base"
-          cx={geometry.cx}
-          cy={geometry.cy}
-          rx={geometry.rx}
-          ry={geometry.ry}
-        />
-      )
-    case 'rect':
-      return (
-        <rect
-          className="map-base"
-          x={geometry.x}
-          y={geometry.y}
-          width={geometry.width}
-          height={geometry.height}
-          rx={geometry.rx}
-        />
-      )
-    case 'circle':
-      return (
-        <circle
-          className="map-base"
-          cx={geometry.cx}
-          cy={geometry.cy}
-          r={geometry.r}
-        />
-      )
-  }
+function labelPlacement(shape: RegionShape): { x: number; y: number; anchor: 'start' | 'middle' | 'end' } {
+  const { cx, cy } = shape.center
+  if (shape.side === 'center') return { x: cx, y: cy - shape.hitR - 8, anchor: 'middle' }
+  if (shape.side === 'right') return { x: cx - shape.hitR - 8, y: cy, anchor: 'end' }
+  return { x: cx + shape.hitR + 8, y: cy, anchor: 'start' }
 }
 
-function shapeProps(
-  shape: BodyShape,
-  enabled: boolean,
-  selected: boolean,
-  onSelect: (shape: BodyShape) => void,
-  onHover: (shape: BodyShape | null) => void,
-) {
-  return {
-    className: `body-shape${enabled ? '' : ' is-off'}${selected ? ' is-selected' : ''}`,
-    role: 'button',
+interface RegionProps {
+  shape: RegionShape
+  enabled: boolean
+  selected: boolean
+  onSelect: (shape: RegionShape) => void
+  onHover: (shape: RegionShape | null) => void
+}
+
+// A single interactive (or coming-soon) region: a transparent hit target that
+// is at least 44 px at the rendered size, the visible shape, and a hover /
+// focus label anchored to the body.
+function RegionGlyph({ shape, enabled, selected, onSelect, onHover }: RegionProps) {
+  const { x, y, anchor } = labelPlacement(shape)
+  const soon = !enabled
+  const label = soon ? `${shape.name} – coming soon` : shape.label
+
+  const hitProps = {
+    className: 'region-hit',
+    cx: shape.center.cx,
+    cy: shape.center.cy,
+    r: shape.hitR,
+    role: 'button' as const,
     tabIndex: 0,
-    'aria-label': enabled ? shape.label : `${shape.label} – coming soon`,
+    'aria-label': label,
     'aria-pressed': enabled ? selected : undefined,
-    'aria-disabled': enabled ? undefined : true,
+    'aria-disabled': soon ? true : undefined,
     onClick: () => onSelect(shape),
     onKeyDown: (event: KeyboardEvent) => {
       if (event.key === 'Enter' || event.key === ' ') {
@@ -79,163 +53,140 @@ function shapeProps(
         onSelect(shape)
       }
     },
-    onFocus: () => onHover(shape),
-    onBlur: () => onHover(null),
     onMouseEnter: () => onHover(shape),
     onMouseLeave: () => onHover(null),
+    onFocus: () => onHover(shape),
+    onBlur: () => onHover(null),
   }
-}
 
-function ShapeItem({
-  shape,
-  enabled,
-  selected,
-  onSelect,
-  onHover,
-}: {
-  shape: BodyShape
-  enabled: boolean
-  selected: boolean
-  onSelect: (shape: BodyShape) => void
-  onHover: (shape: BodyShape | null) => void
-}) {
-  const geometry = shape.geometry
-  const common = shapeProps(shape, enabled, selected, onSelect, onHover)
-
-  switch (geometry.kind) {
-    case 'circle':
-      return (
-        <g>
-          {selected && (
-            <circle
-              className="map-halo"
-              cx={geometry.cx}
-              cy={geometry.cy}
-              r={geometry.r + 10}
-              aria-hidden="true"
-            />
-          )}
-          <circle {...common} cx={geometry.cx} cy={geometry.cy} r={geometry.r} />
-        </g>
-      )
-    case 'ellipse':
-      return (
-        <ellipse
-          {...common}
-          cx={geometry.cx}
-          cy={geometry.cy}
-          rx={geometry.rx}
-          ry={geometry.ry}
+  return (
+    <g
+      className={`map-region map-region--${shape.kind}${soon ? ' is-soon' : ''}${
+        selected ? ' is-selected' : ''
+      }`}
+    >
+      {selected && <circle className="region-glow" cx={shape.center.cx} cy={shape.center.cy} r={shape.hitR + 8} />}
+      <circle {...hitProps} />
+      {shape.kind === 'path' ? (
+        <path
+          className="region-shape"
+          d={(shape as PathShape).path}
+          clipPath="url(#mappa-body-clip)"
         />
-      )
-    case 'rect':
-      return (
-        <rect
-          {...common}
-          x={geometry.x}
-          y={geometry.y}
-          width={geometry.width}
-          height={geometry.height}
-          rx={geometry.rx}
+      ) : (
+        <circle
+          className="region-dot"
+          cx={(shape as DotShape).center.cx}
+          cy={(shape as DotShape).center.cy}
+          r={(shape as DotShape).r}
         />
-      )
-  }
+      )}
+      <text className="region-label" x={x} y={y} textAnchor={anchor}>
+        {label}
+      </text>
+    </g>
+  )
 }
-
-const views: BodyView[] = ['front', 'back']
 
 export function BodyMap({
+  view,
+  selected,
+  onToggleView,
   onSelect,
 }: {
-  onSelect: (regionId: string, side: BodySide) => void
+  view: BodyView
+  selected: { regionId: RegionId; side: BodySide } | null
+  onToggleView: (view: BodyView) => void
+  onSelect: (regionId: RegionId, side: BodySide, label: string) => void
 }) {
-  const [view, setView] = useState<BodyView>('front')
-  const [selectedId, setSelectedId] = useState<string | null>(null)
   const [hoveredId, setHoveredId] = useState<string | null>(null)
 
   const shapes = shapesForView(view)
-  const selected = shapes.find((shape) => shape.id === selectedId) ?? null
   const hovered = shapes.find((shape) => shape.id === hoveredId) ?? null
+  const hinted =
+    hovered !== null && !isRegisteredRegion(hovered.regionId)
+      ? `${hovered.name} – coming soon`
+      : hovered !== null
+        ? hovered.label
+        : null
 
-  function switchView(next: BodyView) {
-    setView(next)
-    setSelectedId(null)
-    setHoveredId(null)
-  }
+  const hint =
+    hinted ?? (selected !== null ? 'Selected.' : 'Tap a region on the body.')
 
-  function press(shape: BodyShape) {
-    if (isRegisteredRegion(shape.regionId)) {
-      setSelectedId((current) => (current === shape.id ? null : shape.id))
-    } else {
-      setHoveredId(shape.id)
+  function press(shape: RegionShape) {
+    if (isRegisteredRegion(shape.regionId) && shape.side !== 'center') {
+      onSelect(shape.regionId, shape.side, shape.label)
     }
   }
 
-  const hint =
-    hovered !== null && !isRegisteredRegion(hovered.regionId)
-      ? `${hovered.label} – coming soon`
-      : null
-
-  const side: BodySide | null =
-    selected !== null && selected.side !== 'center' ? selected.side : null
-
   return (
     <div className="map">
-      <div className="map-toggle" role="group" aria-label="Body map view">
+      <div className="map-toggle" role="group" aria-label="Body view">
         {views.map((target) => (
           <button
             key={target}
             type="button"
             className={view === target ? 'on' : undefined}
             aria-pressed={view === target}
-            onClick={() => switchView(target)}
+            onClick={() => onToggleView(target)}
           >
             {target === 'front' ? 'Front' : 'Back'}
           </button>
         ))}
       </div>
 
-      <svg
-        className="body-map"
-        viewBox="0 0 200 400"
-        role="group"
-        aria-label="Body map"
-      >
-        <g aria-hidden="true">
-          {baseParts.map((geometry, index) => (
-            <BasePart key={index} geometry={geometry} />
-          ))}
-        </g>
-        {shapes.map((shape) => (
-          <ShapeItem
-            key={shape.id}
-            shape={shape}
-            enabled={isRegisteredRegion(shape.regionId)}
-            selected={shape.id === selectedId}
-            onSelect={press}
-            onHover={(target) => setHoveredId(target?.id ?? null)}
-          />
-        ))}
-      </svg>
+      <div className="map-stage">
+        <div className="map-svg-wrap">
+          <svg className="body-map" viewBox={BODY_VIEWBOX} role="group" aria-label="Body map">
+            <defs>
+              <clipPath id="mappa-body-clip">
+                <path d={silhouette.body} />
+              </clipPath>
+            </defs>
 
-      <p className="map-hint" aria-live="polite">
-        {hint ?? 'Tap a region on the body.'}
-      </p>
+            <g className="map-silhouette">
+              <path d={silhouette.body} />
+              <ellipse
+                cx={silhouette.head.cx}
+                cy={silhouette.head.cy}
+                rx={silhouette.head.rx}
+                ry={silhouette.head.ry}
+              />
+            </g>
 
-      {selected !== null && (
-        <div className="map-sheet">
-          <div className="map-sheet-handle" aria-hidden="true" />
-          <div className="map-sheet-row">
-            <strong className="map-sheet-title">{selected.label}</strong>
-            <Chip variant="accent">Selected</Chip>
-          </div>
-          {side !== null && (
-            <PrimaryButton onClick={() => onSelect(selected.regionId, side)}>
-              Continue
-            </PrimaryButton>
-          )}
+            {shapes.map((shape) => (
+              <RegionGlyph
+                key={shape.id}
+                shape={shape}
+                enabled={isRegisteredRegion(shape.regionId)}
+                selected={
+                  selected !== null &&
+                  selected.regionId === shape.regionId &&
+                  selected.side === shape.side
+                }
+                onSelect={press}
+                onHover={(target) => setHoveredId(target?.id ?? null)}
+              />
+            ))}
+
+            {silhouette.markers.map((marker) => (
+              <text key={marker.text} className="map-marker" x={marker.x} y={marker.y}>
+                {marker.text}
+              </text>
+            ))}
+
+            {view === 'back' && (
+              <text className="map-back-note" x="100" y="240" textAnchor="middle">
+                Back view coming soon
+              </text>
+            )}
+          </svg>
         </div>
-      )}
+
+        <p className="map-hint" aria-live="polite">
+          {hint}
+        </p>
+      </div>
     </div>
   )
 }
